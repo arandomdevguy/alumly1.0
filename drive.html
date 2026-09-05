@@ -1,0 +1,1167 @@
+<!doctype html>
+<html lang="fr" class="h-full" x-data="alumlyApp">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Alumly Drive — Annales & Ressources LYMED</title>
+
+    <!-- Polices & Icônes -->
+    <link
+      href="https://unpkg.com/boxicons@2.1.1/css/boxicons.min.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="css/drive.css" />
+  </head>
+  <body class="drive-body">
+    <!-- Curseur personnalisé Alumly -->
+    <div class="cursor cursor-circle"></div>
+    <div class="cursor cursor-point"></div>
+
+    <main>
+      <!-- Showcase Area / Hero (#14202E) -->
+      <section class="showcase-area drive-showcase">
+        <div class="container">
+          <!-- Navbar responsive Alumly -->
+          <nav
+            class="drive-nav-bar"
+            :class="{ 'is-open': mobileNavOpen }"
+            @click.outside="mobileNavOpen = false"
+          >
+            <!-- Espace gauche desktop pour équilibrer le centrage du logo -->
+            <div class="nav-spacer-left"></div>
+
+            <!-- Logo Central : Clic pour retour direct à index.html -->
+            <a
+              href="index.html"
+              class="signature-link getHover"
+              title="Retour à l'accueil Alumly"
+            >
+              <img src="./img/signature.webp" class="signature" alt="Alumly" />
+            </a>
+
+            <!-- Bouton Menu Mobile (Identique à index.html) -->
+            <button
+              class="mobile-menu-toggle getHover"
+              type="button"
+              :aria-expanded="mobileNavOpen"
+              aria-controls="primaryNavigation"
+              @click.stop="mobileNavOpen = !mobileNavOpen"
+            >
+              <span>Menu</span>
+              <i class="bx bx-menu-alt-right" aria-hidden="true"></i>
+            </button>
+
+            <!-- Liste de navigation (Desktop aligné à droite / Mobile en dropdown) -->
+            <ul id="primaryNavigation">
+              <li class="nav-link getHover">
+                <a href="index.html#about" @click="mobileNavOpen = false"
+                  >About</a
+                >
+              </li>
+              <li class="nav-link getHover">
+                <a
+                  href="#assets-archive"
+                  @click="if (currentView !== 'drive') goToDrive(); mobileNavOpen = false;"
+                  >Assets</a
+                >
+              </li>
+              <li class="nav-link getHover">
+                <a href="#contact" @click="mobileNavOpen = false">Contact</a>
+              </li>
+              <li
+                class="nav-link getHover"
+                x-show="currentUser"
+                style="display: none"
+              >
+                <a
+                  href="#"
+                  @click.prevent="isUploadModalOpen = true; mobileNavOpen = false;"
+                  >Déposer</a
+                >
+              </li>
+
+              <!-- Auth & Profil -->
+              <li class="nav-link nav-auth-item" x-show="!currentUser">
+                <button
+                  type="button"
+                  class="btn-auth-trigger getHover"
+                  @click.stop="openAuthModal('login'); mobileNavOpen = false;"
+                >
+                  <i class="bx bx-log-in"></i>
+                  <span>Connexion</span>
+                </button>
+              </li>
+
+              <li
+                class="nav-link nav-auth-item"
+                x-show="currentUser"
+                style="display: none"
+              >
+                <div class="user-menu-dropdown" x-data="{ open: false }">
+                  <button
+                    @click.stop="open = !open"
+                    class="btn-user-profile getHover"
+                    type="button"
+                  >
+                    <span
+                      class="user-name-text"
+                      x-text="currentUser?.name"
+                    ></span>
+                    <div
+                      class="user-avatar-circle"
+                      x-text="currentUser?.name?.charAt(0)"
+                    ></div>
+                  </button>
+
+                  <div
+                    x-show="open"
+                    x-cloak
+                    @click.outside="open = false"
+                    class="user-dropdown-popover"
+                    style="display: none"
+                  >
+                    <div class="user-dropdown-header">
+                      <p
+                        class="user-popover-name"
+                        x-text="currentUser?.name"
+                      ></p>
+                      <p
+                        class="user-popover-email"
+                        x-text="currentUser?.email"
+                      ></p>
+                      <span
+                        class="user-role-badge"
+                        x-text="currentUser?.role"
+                      ></span>
+                    </div>
+
+                    <div class="user-dropdown-links">
+                      <button
+                        @click="goToDrive(); open = false; mobileNavOpen = false;"
+                        class="dropdown-item getHover"
+                        type="button"
+                      >
+                        <i class="bx bx-folder"></i> Toutes les ressources
+                      </button>
+                      <button
+                        @click="showMyResources(); open = false; mobileNavOpen = false;"
+                        class="dropdown-item getHover"
+                        type="button"
+                      >
+                        <i class="bx bx-file"></i> Mes publications
+                      </button>
+                      <template x-if="currentUser?.role === 'admin'">
+                        <button
+                          @click="currentView = 'admin'; open = false; mobileNavOpen = false;"
+                          class="dropdown-item admin-item getHover"
+                          type="button"
+                        >
+                          <div class="flex-align-center">
+                            <i class="bx bx-shield-quarter"></i> Panel Admin
+                          </div>
+                          <span
+                            x-show="pendingCount > 0"
+                            class="pending-bubble"
+                            x-text="pendingCount"
+                          ></span>
+                        </button>
+                      </template>
+                    </div>
+
+                    <div class="user-dropdown-footer">
+                      <button
+                        @click="logout(); open = false; mobileNavOpen = false;"
+                        class="dropdown-item logout-item getHover"
+                        type="button"
+                      >
+                        <i class="bx bx-log-out"></i> Déconnexion
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </li>
+            </ul>
+          </nav>
+
+          <!-- Titre & Contenu Hero (Centré sur PC) -->
+          <div class="drive-hero-center">
+            <p class="comment-hero"># academic archive & past papers</p>
+            <h1 class="big-name getHover">
+              Academic <br />
+              <span>Assets Drive</span>
+            </h1>
+            <p class="drive-hero-desc">
+              Annales de l'<strong>X</strong>, des <strong>Mines</strong>, de
+              <strong>Centrale</strong> et <strong>CCINP</strong>, retours
+              d'oraux commentés et fiches de synthèse partagés par les
+              promotions du LYMED[cite: 3, 4].
+            </p>
+          </div>
+
+          <!-- Bouton Scroll (Desktop uniquement) -->
+          <a href="#assets-archive" class="scroll-indicator getHover">
+            <span class="scroll">Explore</span>
+            <span class="line"></span>
+          </a>
+
+          <!-- Bas du Hero -->
+          <div class="bottom-section">
+            <p><i class="bx bx-folder-open"></i> Curated for CPGE LYMED</p>
+            <ul class="social-media">
+              <li>
+                <a
+                  href="https://www.instagram.com/alumni_lymed/"
+                  target="_blank"
+                  class="getHover"
+                  rel="noopener noreferrer"
+                >
+                  <i class="bx bxl-instagram"></i>
+                </a>
+              </li>
+              <li>
+                <a
+                  href="https://www.linkedin.com/company/alumly-anciens-du-lymed/"
+                  target="_blank"
+                  class="getHover"
+                  rel="noopener noreferrer"
+                >
+                  <i class="bx bxl-linkedin"></i>
+                </a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 1 : ARCHIVES -->
+      <section
+        class="drive-archive"
+        id="assets-archive"
+        x-show="currentView === 'drive'"
+      >
+        <div class="container">
+          <div class="section-heading">
+            <h1>
+              <span class="leaiiba leaiiba--horizontal">
+                <span class="circle"><span class="point one"></span></span>
+                <span class="point two"></span>
+              </span>
+              The Archive<span class="no9ta"></span>
+            </h1>
+          </div>
+
+          <p class="section-description">
+            Consultez et filtrez l'ensemble des documents vérifiés par filière,
+            matière et type d'épreuve.
+          </p>
+
+          <div
+            x-show="onlyMyPublications"
+            x-cloak
+            class="active-author-filter-bar"
+            style="display: none"
+          >
+            <div class="filter-msg">
+              <i class="bx bx-user-check"></i>
+              <span>Affichage de vos publications uniquement</span>
+            </div>
+            <button
+              @click="onlyMyPublications = false;"
+              class="btn-clear-author getHover"
+              type="button"
+            >
+              Tout afficher
+            </button>
+          </div>
+
+          <div class="drive-filter-wrap">
+            <div class="drive-search-box">
+              <i class="bx bx-search"></i>
+              <input
+                type="text"
+                x-model="searchQuery"
+                placeholder="Rechercher une fiche, un cours (Dunford, Maxwell, Jordan...)"
+              />
+              <span class="search-cmd">⌘K</span>
+            </div>
+
+            <div class="filter-pills-row">
+              <template x-for="mat in matieres" :key="mat.id">
+                <button
+                  type="button"
+                  class="filter-pill getHover"
+                  :class="selectedMatiere === mat.id ? 'active' : ''"
+                  @click="selectedMatiere = mat.id"
+                >
+                  <span x-text="mat.icon"></span>
+                  <span x-text="mat.label"></span>
+                  <span
+                    class="pill-count"
+                    x-text="countByMatiere(mat.id)"
+                  ></span>
+                </button>
+              </template>
+            </div>
+
+            <div class="filter-dropdowns-row">
+              <div class="filter-select-group">
+                <label>Filière</label>
+                <select x-model="selectedFiliere" class="getHover">
+                  <template x-for="fil in filieres" :key="fil">
+                    <option :value="fil" x-text="fil"></option>
+                  </template>
+                </select>
+              </div>
+
+              <div class="filter-select-group">
+                <label>Format</label>
+                <select x-model="selectedType" class="getHover">
+                  <template x-for="t in types" :key="t">
+                    <option :value="t" x-text="t"></option>
+                  </template>
+                </select>
+              </div>
+
+              <button
+                type="button"
+                @click="onlyStarred = !onlyStarred"
+                class="btn-filter-star getHover"
+                :class="onlyStarred ? 'active' : ''"
+              >
+                <i class="bx" :class="onlyStarred ? 'bxs-star' : 'bx-star'"></i>
+                <span>Favoris</span>
+              </button>
+
+              <div class="filter-select-group sort-group">
+                <label>Trier par</label>
+                <select x-model="sortBy" class="getHover">
+                  <option value="stars">Étoiles</option>
+                  <option value="downloads">Téléchargements</option>
+                  <option value="recent">Plus récents</option>
+                </select>
+              </div>
+
+              <div class="view-mode-switchers">
+                <button
+                  type="button"
+                  @click="viewMode = 'grid'"
+                  class="view-btn getHover"
+                  :class="viewMode === 'grid' ? 'active' : ''"
+                  title="Affichage Grille"
+                >
+                  <i class="bx bx-grid-alt"></i>
+                </button>
+                <button
+                  type="button"
+                  @click="viewMode = 'list'"
+                  class="view-btn getHover"
+                  :class="viewMode === 'list' ? 'active' : ''"
+                  title="Affichage Liste"
+                >
+                  <i class="bx bx-list-ul"></i>
+                </button>
+              </div>
+
+              <span
+                class="results-badge"
+                x-text="filteredResources().length + ' ressource(s)'"
+              ></span>
+            </div>
+          </div>
+
+          <!-- Grille de Cartes -->
+          <div class="assets-grid" x-show="viewMode === 'grid'">
+            <template x-for="item in filteredResources()" :key="item.id">
+              <article class="asset-card getHover">
+                <div>
+                  <div class="asset-card-top">
+                    <span
+                      class="asset-tag"
+                      x-text="item.filiere + ' • ' + getMatiereLabel(item.matiere)"
+                    ></span>
+                    <span class="asset-type-badge" x-text="item.type"></span>
+                  </div>
+                  <h3 class="asset-card-title" x-text="item.title"></h3>
+                  <p
+                    class="asset-card-desc"
+                    x-text="item.description || 'Ressource pédagogique certifiée pour la préparation aux concours.'"
+                  ></p>
+
+                  <div
+                    class="tags-container"
+                    x-show="item.tags && item.tags.length"
+                  >
+                    <template x-for="tag in item.tags" :key="tag">
+                      <span class="tag-chip" x-text="'#' + tag"></span>
+                    </template>
+                  </div>
+                </div>
+
+                <div>
+                  <div class="asset-card-meta">
+                    <span
+                      x-text="'Par ' + item.author + ' (' + (item.year || '2026') + ')'"
+                    ></span>
+                    <div class="meta-stats-row">
+                      <span class="downloads-stat">
+                        <i class="bx bx-download"></i>
+                        <span x-text="item.downloads || 0"></span>
+                      </span>
+                      <button
+                        type="button"
+                        @click="toggleStar(item)"
+                        class="btn-card-star getHover"
+                        :class="item.isStarred ? 'starred' : ''"
+                      >
+                        <i
+                          class="bx"
+                          :class="item.isStarred ? 'bxs-star' : 'bx-star'"
+                        ></i>
+                        <span x-text="item.stars || 0"></span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="asset-actions">
+                    <a
+                      :href="item.file_url"
+                      target="_blank"
+                      @click="triggerDownload(item)"
+                      class="btn-card-action btn-download getHover"
+                    >
+                      <span>Consulter / Télécharger</span>
+                      <i class="bx bx-link-external"></i>
+                    </a>
+                  </div>
+                </div>
+              </article>
+            </template>
+          </div>
+
+          <!-- Vue Tableau -->
+          <div
+            class="table-container"
+            x-show="viewMode === 'list'"
+            x-cloak
+            style="display: none"
+          >
+            <table class="drive-table">
+              <thead>
+                <tr>
+                  <th>Titre & Auteur</th>
+                  <th>Matière</th>
+                  <th>Filière</th>
+                  <th>Format</th>
+                  <th>Étoiles</th>
+                  <th>Téléchargements</th>
+                  <th class="text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="item in filteredResources()" :key="item.id">
+                  <tr class="getHover">
+                    <td>
+                      <strong class="table-title" x-text="item.title"></strong>
+                      <span
+                        class="table-sub"
+                        x-text="'Par ' + item.author"
+                      ></span>
+                    </td>
+                    <td x-text="getMatiereLabel(item.matiere)"></td>
+                    <td x-text="item.filiere"></td>
+                    <td>
+                      <span class="table-type-tag" x-text="item.type"></span>
+                    </td>
+                    <td>
+                      <button
+                        type="button"
+                        @click="toggleStar(item)"
+                        class="table-star-btn getHover"
+                        :class="item.isStarred ? 'starred' : ''"
+                      >
+                        <i
+                          class="bx"
+                          :class="item.isStarred ? 'bxs-star' : 'bx-star'"
+                        ></i>
+                        <span x-text="item.stars || 0"></span>
+                      </button>
+                    </td>
+                    <td x-text="item.downloads || 0"></td>
+                    <td class="text-right">
+                      <a
+                        :href="item.file_url"
+                        target="_blank"
+                        @click="triggerDownload(item)"
+                        class="table-action-icon getHover"
+                      >
+                        <i class="bx bx-download"></i>
+                      </a>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+
+          <div
+            x-show="filteredResources().length === 0"
+            x-cloak
+            class="empty-results-box"
+            style="display: none"
+          >
+            <i class="bx bx-folder-minus"></i>
+            <h4>Aucune ressource trouvée</h4>
+            <p>
+              Modifiez vos filtres ou soyez le premier à publier un document
+              pour ce chapitre.
+            </p>
+          </div>
+
+          <!-- Appel à inscription (Contraste blanc éclatant) -->
+          <div x-show="!currentUser" class="student-register-banner">
+            <div class="banner-inner">
+              <span class="banner-tag">Accès vérifié LYMED</span>
+              <h3>Étudiant ou Alumni du LyMed ?</h3>
+              <p>
+                Créez votre compte pour déposer vos documents, marquer vos
+                favoris et accéder à l'ensemble des annales résolues.
+              </p>
+              <button
+                type="button"
+                @click.stop="openAuthModal('register')"
+                class="btn btn-primary getHover"
+              >
+                Demander mon accès
+                <i class="bx bx-right-arrow-alt"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 2 : VUE PANEL ADMIN -->
+      <section
+        class="admin-panel-section"
+        x-show="currentView === 'admin'"
+        x-cloak
+        style="display: none"
+      >
+        <div class="container">
+          <div class="admin-header-row">
+            <div>
+              <span class="admin-eyebrow">LYMED ADMINISTRATION</span>
+              <h2 class="admin-main-title">Validation des inscriptions</h2>
+            </div>
+            <button
+              type="button"
+              @click="goToDrive()"
+              class="btn btn-light getHover"
+            >
+              <i class="bx bx-arrow-back"></i> Revenir au Drive
+            </button>
+          </div>
+
+          <div class="admin-stats-grid">
+            <div class="admin-stat-card">
+              <span class="stat-lbl">Demandes en attente</span>
+              <h3 class="stat-val pending-text" x-text="pendingCount"></h3>
+            </div>
+            <div class="admin-stat-card">
+              <span class="stat-lbl">Comptes approuvés</span>
+              <h3
+                class="stat-val approved-text"
+                x-text="registrationRequests.filter(r => r.status === 'approved').length"
+              ></h3>
+            </div>
+            <div class="admin-stat-card">
+              <span class="stat-lbl">Demandes refusées</span>
+              <h3
+                class="stat-val"
+                x-text="registrationRequests.filter(r => r.status === 'rejected').length"
+              ></h3>
+            </div>
+          </div>
+
+          <div class="table-container admin-table-wrap">
+            <table class="drive-table">
+              <thead>
+                <tr>
+                  <th>Élève</th>
+                  <th>Filière & Promo</th>
+                  <th>Date</th>
+                  <th>Certificat</th>
+                  <th>Statut</th>
+                  <th class="text-right">Décision</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="req in registrationRequests" :key="req.id">
+                  <tr>
+                    <td>
+                      <strong
+                        class="table-title"
+                        x-text="req.full_name"
+                      ></strong>
+                      <span class="table-sub" x-text="req.email"></span>
+                    </td>
+                    <td>
+                      <span x-text="req.filiere"></span>
+                      <span
+                        class="table-sub"
+                        x-text="'Promo ' + req.promo"
+                      ></span>
+                    </td>
+                    <td
+                      x-text="new Date(req.created_at).toLocaleDateString('fr-FR')"
+                    ></td>
+                    <td>
+                      <button
+                        type="button"
+                        @click="previewProof(req)"
+                        class="btn-view-proof getHover"
+                      >
+                        <i class="bx bx-file"></i> Voir
+                      </button>
+                    </td>
+                    <td>
+                      <span
+                        class="status-chip"
+                        :class="req.status"
+                        x-text="getStatusLabel(req.status)"
+                      ></span>
+                    </td>
+                    <td class="text-right">
+                      <div
+                        class="admin-decision-btns"
+                        x-show="req.status === 'pending'"
+                      >
+                        <button
+                          type="button"
+                          @click="approveRequest(req)"
+                          class="btn-approve getHover"
+                          title="Valider le compte"
+                        >
+                          <i class="bx bx-check"></i>
+                        </button>
+                        <button
+                          type="button"
+                          @click="rejectRequest(req)"
+                          class="btn-reject getHover"
+                          title="Refuser la demande"
+                        >
+                          <i class="bx bx-x"></i>
+                        </button>
+                      </div>
+                      <span
+                        x-show="req.status !== 'pending'"
+                        class="treated-text"
+                        >Traité</span
+                      >
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 3 : CONTACT US -->
+      <section
+        class="contact light"
+        id="contact"
+        x-show="currentView === 'drive'"
+      >
+        <div class="container">
+          <div class="contact-intro">
+            <p class="contact-eyebrow"><span>04</span> Contact • Alumly</p>
+            <div class="section-heading">
+              <h1>
+                Contact
+                <span
+                  >Us<img
+                    class="leaiiba-img leaiiba-img--after"
+                    src="./img/leaiiba-light.png?v=56"
+                    alt=""
+                    width="176"
+                    height="296"
+                    aria-hidden="true"
+                /></span>
+              </h1>
+            </div>
+            <p class="section-description">
+              Have an idea, a question, or something worth sharing? Leave us a
+              note and a member of the board will get back to you[cite: 5].
+            </p>
+            <dl class="contact-meta">
+              <div>
+                <dt>Based in</dt>
+                <dd>Martil, Morocco</dd>
+              </div>
+              <div>
+                <dt>Community</dt>
+                <dd>Alumni • Students • Partners</dd>
+              </div>
+            </dl>
+          </div>
+          <form class="contact-form" action="index.html" method="post">
+            <div class="contact-form__header">
+              <p>Send a note</p>
+              <span>01 / Message</span>
+            </div>
+            <div class="inputs-wrapper">
+              <div class="input-wrap" data-field="01">
+                <label for="contactFirstName"
+                  >First name <span aria-hidden="true">• Required</span></label
+                >
+                <input
+                  id="contactFirstName"
+                  class="contact-input"
+                  type="text"
+                  autocomplete="given-name"
+                  name="firstName"
+                  required
+                  placeholder="Your first name"
+                />
+              </div>
+              <div class="input-wrap" data-field="02">
+                <label for="contactLastName"
+                  >Last name <span aria-hidden="true">• Required</span></label
+                >
+                <input
+                  id="contactLastName"
+                  class="contact-input"
+                  type="text"
+                  autocomplete="family-name"
+                  name="lastName"
+                  required
+                  placeholder="Your last name"
+                />
+              </div>
+              <div class="input-wrap w-100" data-field="03">
+                <label for="contactEmail"
+                  >Email address
+                  <span aria-hidden="true">• Required</span></label
+                >
+                <input
+                  id="contactEmail"
+                  class="contact-input"
+                  type="email"
+                  autocomplete="email"
+                  name="email"
+                  required
+                  placeholder="you@example.com"
+                />
+              </div>
+              <div class="input-wrap textarea w-100" data-field="04">
+                <label for="contactMessage"
+                  >Your message <span>• Optional</span></label
+                >
+                <textarea
+                  id="contactMessage"
+                  class="contact-input"
+                  autocomplete="off"
+                  name="message"
+                  placeholder="Tell us how we can help"
+                ></textarea>
+              </div>
+            </div>
+            <div class="submit-wrap">
+              <p>We will reply to the email above.</p>
+              <button type="submit" class="btn contact-send getHover">
+                Send message
+                <i class="bx bx-right-arrow-alt" aria-hidden="true"></i>
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+    </main>
+
+    <!-- MODAL : AUTHENTIFICATION -->
+    <div
+      class="drive-modal"
+      :class="isAuthModalOpen ? 'is-open' : ''"
+      x-show="isAuthModalOpen"
+      x-cloak
+      x-transition.opacity
+      @click.self="isAuthModalOpen = false"
+      style="display: none"
+    >
+      <div class="drive-modal-card auth-modal-card">
+        <div class="modal-header">
+          <div class="auth-tabs-toggle">
+            <button
+              type="button"
+              class="auth-tab-btn getHover"
+              :class="authTab === 'login' ? 'active' : ''"
+              @click="authTab = 'login'"
+            >
+              Connexion
+            </button>
+            <button
+              type="button"
+              class="auth-tab-btn getHover"
+              :class="authTab === 'register' ? 'active' : ''"
+              @click="authTab = 'register'"
+            >
+              Demande d'accès
+            </button>
+          </div>
+          <button
+            type="button"
+            class="modal-close getHover"
+            @click="isAuthModalOpen = false"
+          >
+            &times;
+          </button>
+        </div>
+
+        <form
+          x-show="authTab === 'login'"
+          @submit.prevent="handleLogin()"
+          class="modal-form-body"
+        >
+          <div
+            x-show="loginError"
+            class="auth-error-box"
+            x-text="loginError"
+            style="display: none"
+          ></div>
+
+          <div class="form-group-item">
+            <label>Email</label>
+            <input
+              type="email"
+              x-model="loginEmail"
+              required
+              placeholder="nom@alumni.lymed.ma"
+              class="drive-styled-input"
+            />
+          </div>
+
+          <div class="form-group-item">
+            <label>Mot de passe</label>
+            <input
+              type="password"
+              x-model="loginPassword"
+              required
+              placeholder="••••••••"
+              class="drive-styled-input"
+            />
+          </div>
+
+          <button
+            type="submit"
+            class="btn btn-primary w-full submit-cta getHover"
+            :disabled="isLoading"
+          >
+            <span x-show="!isLoading">Se connecter</span>
+            <span x-show="isLoading">Connexion en cours...</span>
+          </button>
+        </form>
+
+        <form
+          x-show="authTab === 'register'"
+          @submit.prevent="submitRegistrationRequest($event)"
+          class="modal-form-body"
+          style="display: none"
+        >
+          <template x-if="!registerSubmitted">
+            <div class="register-inputs-stack">
+              <div class="form-group-item">
+                <label>Nom complet</label>
+                <input
+                  type="text"
+                  x-model="regForm.name"
+                  required
+                  placeholder="Ex: Yassir Serroukh"
+                  class="drive-styled-input"
+                />
+              </div>
+
+              <div class="form-group-item">
+                <label>Email académique ou personnel</label>
+                <input
+                  type="email"
+                  x-model="regForm.email"
+                  required
+                  placeholder="nom@exemple.com"
+                  class="drive-styled-input"
+                />
+              </div>
+
+              <div class="form-group-item">
+                <label>Mot de passe (min. 6 caractères)</label>
+                <input
+                  type="password"
+                  x-model="regForm.password"
+                  required
+                  minlength="6"
+                  placeholder="••••••••"
+                  class="drive-styled-input"
+                />
+              </div>
+
+              <div class="form-row-dual">
+                <div class="form-group-item">
+                  <label>Filière</label>
+                  <select x-model="regForm.filiere" class="drive-styled-input">
+                    <option>MPSI / MP</option>
+                    <option>MP2I / MPI</option>
+                    <option>PCSI / PC</option>
+                    <option>PSI</option>
+                  </select>
+                </div>
+                <div class="form-group-item">
+                  <label>Promo (Année d'intégration)</label>
+                  <input
+                    type="number"
+                    x-model="regForm.promo"
+                    required
+                    placeholder="2026"
+                    class="drive-styled-input"
+                  />
+                </div>
+              </div>
+
+              <div class="form-group-item">
+                <label
+                  >Certificat de scolarité ou justificatif (PDF / Image)</label
+                >
+                <input
+                  type="file"
+                  required
+                  accept=".pdf,image/*"
+                  class="file-browse-input"
+                />
+              </div>
+
+              <button
+                type="submit"
+                class="btn btn-primary w-full submit-cta getHover"
+                :disabled="isLoading"
+              >
+                <span x-show="!isLoading">Envoyer la demande</span>
+                <span x-show="isLoading">Téléversement du certificat...</span>
+              </button>
+            </div>
+          </template>
+
+          <template x-if="registerSubmitted">
+            <div class="register-success-state">
+              <div class="success-icon-badge">
+                <i class="bx bx-check"></i>
+              </div>
+              <h4>Demande enregistrée</h4>
+              <p>
+                Votre justificatif a bien été transmis. Dès sa validation par le
+                bureau Alumly, vous recevrez un email et pourrez vous connecter
+                immédiatement[cite: 4].
+              </p>
+              <button
+                type="button"
+                @click="registerSubmitted = false; authTab = 'login';"
+                class="btn btn-primary getHover"
+              >
+                Revenir à la connexion
+              </button>
+            </div>
+          </template>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL : DÉPÔT DE RESSOURCE -->
+    <div
+      class="drive-modal"
+      :class="isUploadModalOpen ? 'is-open' : ''"
+      x-show="isUploadModalOpen"
+      x-cloak
+      x-transition.opacity
+      @click.self="isUploadModalOpen = false"
+      style="display: none"
+    >
+      <div class="drive-modal-card">
+        <div class="modal-header">
+          <div>
+            <span class="modal-eyebrow">CONTRIBUTION ARCHIVE</span>
+            <h2 class="modal-title">Déposer une ressource</h2>
+          </div>
+          <button
+            type="button"
+            class="modal-close getHover"
+            @click="isUploadModalOpen = false"
+          >
+            &times;
+          </button>
+        </div>
+
+        <form
+          @submit.prevent="handleUploadResource($event)"
+          class="modal-form-body"
+        >
+          <div class="form-group-item">
+            <label>Titre du document *</label>
+            <input
+              type="text"
+              x-model="newResource.title"
+              required
+              placeholder="Ex: Planche Oral X 2026 — Algèbre bilinéaire"
+              class="drive-styled-input"
+            />
+          </div>
+
+          <div class="form-group-item">
+            <label>Description & Détails de l'épreuve</label>
+            <textarea
+              x-model="newResource.description"
+              rows="2"
+              placeholder="Questions posées, examinateur, concours ciblé..."
+              class="drive-styled-input textarea-input"
+            ></textarea>
+          </div>
+
+          <div class="form-row-dual">
+            <div class="form-group-item">
+              <label>Matière *</label>
+              <select x-model="newResource.matiere" class="drive-styled-input">
+                <option value="maths">Mathématiques</option>
+                <option value="physique">Physique & Chimie</option>
+                <option value="info">Informatique</option>
+                <option value="francais">Français-Philo</option>
+                <option value="anglais">Anglais</option>
+              </select>
+            </div>
+            <div class="form-group-item">
+              <label>Format *</label>
+              <select x-model="newResource.type" class="drive-styled-input">
+                <option>Fiches</option>
+                <option>DS / Concours</option>
+                <option>Cours</option>
+                <option>Exercices / TD</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row-dual">
+            <div class="form-group-item">
+              <label>Filière ciblée</label>
+              <select x-model="newResource.filiere" class="drive-styled-input">
+                <option>MPSI / MP</option>
+                <option>MP2I / MPI</option>
+                <option>PCSI / PC</option>
+                <option>PSI</option>
+                <option>Tous</option>
+              </select>
+            </div>
+            <div class="form-group-item">
+              <label>Tags (séparés par des virgules)</label>
+              <input
+                type="text"
+                x-model="newResource.tags"
+                placeholder="Dunford, X-ENS, Dualité"
+                class="drive-styled-input"
+              />
+            </div>
+          </div>
+
+          <div class="form-group-item">
+            <label>Fichier PDF *</label>
+            <input
+              type="file"
+              required
+              accept=".pdf"
+              class="file-browse-input"
+            />
+          </div>
+
+          <div class="modal-footer-actions">
+            <button
+              type="button"
+              @click="isUploadModalOpen = false"
+              class="btn btn-light getHover"
+            >
+              Annuler
+            </button>
+            <button
+              type="submit"
+              class="btn btn-primary getHover"
+              :disabled="isLoading"
+            >
+              <span x-show="!isLoading">Téléverser & Publier</span>
+              <span x-show="isLoading">Envoi vers Cloudflare R2...</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast-popup" id="toastNotice">Action effectuée avec succès</div>
+
+    <!-- Footer Alumly (#14202E) -->
+    <footer class="site-footer" aria-labelledby="footer-brand">
+      <div class="site-footer__inner">
+        <div class="site-footer__meta">
+          <p class="site-footer__eyebrow"># alumly • depuis 2023</p>
+          <p class="site-footer__place">
+            <i class="bx bx-map" aria-hidden="true"></i> Martil, Maroc[cite: 3]
+          </p>
+        </div>
+        <div class="site-footer__stamp">
+          <h2 id="footer-brand" class="site-footer__brand">
+            Alumly<img
+              class="leaiiba-img leaiiba-img--after site-footer__leaiiba"
+              src="./img/leaiiba-light.png?v=56"
+              alt=""
+              width="176"
+              height="296"
+              aria-hidden="true"
+            />
+          </h2>
+          <p class="site-footer__line">Aujourd'hui pour demain</p>
+        </div>
+        <nav class="site-footer__nav" aria-label="Footer">
+          <a href="index.html#about" class="getHover">About</a>
+          <a href="index.html#mission" class="getHover">Mission</a>
+          <a href="index.html#board" class="getHover">Board</a>
+          <a href="index.html#cta" class="getHover">Assets</a>
+          <a href="#contact" class="getHover">Contact</a>
+        </nav>
+        <div class="site-footer__base">
+          <div class="site-footer__social">
+            <a
+              href="https://www.linkedin.com/company/alumly-anciens-du-lymed/"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="getHover"
+              >LinkedIn</a
+            >
+            <a
+              href="https://www.instagram.com/alumni_lymed/"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="getHover"
+              >Instagram</a
+            >
+          </div>
+          <p class="site-footer__credit">
+            Made with <span class="site-footer__l7ob">l7ob</span> • 2026
+            Alumly[cite: 3]
+          </p>
+        </div>
+      </div>
+    </footer>
+    <!-- Supabase, GSAP & Alpine.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="js/drive.js"></script>
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
+    ></script>
+  </body>
+</html>
